@@ -4,8 +4,33 @@ import numpy as np
 import plotly.express as px
 from datetime import datetime, timedelta
 
-# Set Layout to Wide
-st.set_page_config(page_title="Mandiri Smart-RM Co-Pilot", layout="wide")
+# Set Layout to Wide and Force Light Mode
+st.set_page_config(
+    page_title="Mandiri Smart-RM Co-Pilot",
+    layout="wide",
+    initial_sidebar_state="expanded",
+    menu_items={
+        'About': "Mandiri Smart-RM Co-Pilot - Banking Intelligence Dashboard"
+    }
+)
+
+# Force light theme via custom CSS
+st.markdown("""
+<style>
+    /* Force light theme */
+    [data-testid="stAppViewContainer"] {
+        background-color: #ffffff;
+        color: #000000;
+    }
+    [data-testid="stSidebar"] {
+        background-color: #f8f9fa;
+    }
+    /* Ensure text is always dark */
+    .stMarkdown, .stText, p, span, div {
+        color: #262730 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Data Generation Function
 def load_data():

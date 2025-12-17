@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import plotly.express as px
 from datetime import datetime, timedelta
 
 # Set Layout to Wide
@@ -649,12 +650,35 @@ elif view_mode == "Analytics":
             'Jumlah': tag_counts.values
         })
         
-        st.bar_chart(chart_data.set_index('Tag'))
+        # Create pie chart data
+        import plotly.express as px
+        fig1 = px.pie(
+            chart_data, 
+            values='Jumlah', 
+            names='Tag',
+            title='',
+            hole=0.3,
+            color_discrete_sequence=px.colors.qualitative.Set3
+        )
+        fig1.update_traces(textposition='inside', textinfo='percent+label')
+        fig1.update_layout(
+            showlegend=True,
+            height=350,
+            margin=dict(t=0, b=0, l=0, r=0)
+        )
+        st.plotly_chart(fig1, use_container_width=True)
         
-        st.write("**Rincian:**")
-        for tag, count in tag_counts.items():
-            percentage = (count / total_clients) * 100
-            st.write(f"• {tag}: {count} klien ({percentage:.1f}%)")
+        # Contact Recency Alert for Opportunity Segment
+        st.markdown("**Alert: Klien Belum Dihubungi**")
+        target_clients = df[df['Opportunity Tag'].str.contains('TARGET')]
+        not_contacted = len(target_clients[target_clients['Days Since Contact'] > 30])
+        urgent = len(target_clients[target_clients['Days Since Contact'] > 90])
+        
+        col_a1, col_a2 = st.columns(2)
+        with col_a1:
+            st.metric(">30 hari", not_contacted, f"{not_contacted/len(target_clients)*100:.0f}%" if len(target_clients) > 0 else "0%")
+        with col_a2:
+            st.metric(">90 hari", urgent, "URGENT!" if urgent > 0 else "OK", delta_color="inverse")
     
     with col_chart2:
         st.subheader("💰 Distribusi Saldo Giro")
@@ -671,11 +695,34 @@ elif view_mode == "Analytics":
             'Jumlah': range_counts.values
         })
         
-        st.bar_chart(chart_data2.set_index('Rentang'))
+        # Create pie chart for giro distribution
+        fig2 = px.pie(
+            chart_data2,
+            values='Jumlah',
+            names='Rentang',
+            title='',
+            hole=0.3,
+            color_discrete_sequence=px.colors.qualitative.Pastel
+        )
+        fig2.update_traces(textposition='inside', textinfo='percent+label')
+        fig2.update_layout(
+            showlegend=True,
+            height=350,
+            margin=dict(t=0, b=0, l=0, r=0)
+        )
+        st.plotly_chart(fig2, use_container_width=True)
         
-        st.write("**Distribusi:**")
-        for range_val, count in range_counts.items():
-            st.write(f"• {range_val}: {count} klien")
+        # High-Value Client Contact Status
+        st.markdown("**Alert: High-Value Klien**")
+        high_value = df[df['Avg Giro Balance (M)'] >= 2000]
+        hv_not_contacted = len(high_value[high_value['Days Since Contact'] > 30])
+        hv_urgent = len(high_value[high_value['Days Since Contact'] > 90])
+        
+        col_b1, col_b2 = st.columns(2)
+        with col_b1:
+            st.metric(">30 hari", hv_not_contacted, f"{hv_not_contacted/len(high_value)*100:.0f}%" if len(high_value) > 0 else "0%")
+        with col_b2:
+            st.metric(">90 hari", hv_urgent, "CRITICAL!" if hv_urgent > 0 else "OK", delta_color="inverse")
     
     st.markdown("---")
     

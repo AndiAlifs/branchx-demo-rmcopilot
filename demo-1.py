@@ -14,23 +14,6 @@ st.set_page_config(
     }
 )
 
-# Force light theme via custom CSS
-st.markdown("""
-<style>
-    /* Force light theme */
-    [data-testid="stAppViewContainer"] {
-        background-color: #ffffff;
-        color: #000000;
-    }
-    [data-testid="stSidebar"] {
-        background-color: #f8f9fa;
-    }
-    /* Ensure text is always dark */
-    .stMarkdown, .stText, p, span, div {
-        color: #262730 !important;
-    }
-</style>
-""", unsafe_allow_html=True)
 
 # Data Generation Function
 def load_data():
@@ -327,10 +310,10 @@ with st.sidebar:
     # Problem Statement
     st.markdown("""
     <div style="
-        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+        background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
         padding: 20px;
         border-radius: 10px;
-        border-left: 5px solid #c92a2a;
+        border-left: 5px solid #a61e1e;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         margin: 10px 0;
     ">
@@ -340,6 +323,29 @@ with st.sidebar:
         <p style="color: white; margin: 0; font-size: 14px; line-height: 1.6;">
             Funding Giro tinggi namun lending SME sangat rendah. 
             <strong>Diperlukan tindakan segera</strong> untuk menyeimbangkan portfolio.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Relationship Health Alert
+    loyal_clients = df[df["Tenure Years"] > 10]
+    ignored_loyal = df[(df["Tenure Years"] > 10) & (df["Days Since Contact"] > 90)]
+    
+    st.markdown(f"""
+    <div style="
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        padding: 20px;
+        border-radius: 10px;
+        border-left: 5px solid #a626d3;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin: 10px 0;
+    ">
+        <h3 style="color: white; margin: 0 0 10px 0; font-size: 18px;">
+            RELATIONSHIP RISK
+        </h3>
+        <p style="color: white; margin: 0; font-size: 14px; line-height: 1.6;">
+            <strong>{len(ignored_loyal)} nasabah loyal</strong> (>10 tahun) belum dihubungi lebih dari 90 hari. 
+            Risiko churn tinggi jika tidak segera ditangani.
         </p>
     </div>
     """, unsafe_allow_html=True)

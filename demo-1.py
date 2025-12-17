@@ -892,38 +892,65 @@ elif view_mode == "Analytics":
     
     with col_k1:
         st.markdown(f"""
-        <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    border-radius: 10px; color: white;">
-            <h4 style="margin: 0;">Total Klien</h4>
-            <h1 style="margin: 10px 0; font-size: 36px;">{total_clients}</h1>
-            <p style="margin: 0; font-size: 14px;">Portfolio aktif</p>
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    border-radius: 12px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+                    height: 200px; padding: 20px 10px;
+                    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+            <h4 style="margin: 0 0 10px 0; font-size: 15px; font-weight: normal;">Total Klien</h4>
+            <h1 style="margin: 0 0 8px 0; font-size: 56px; font-weight: bold; line-height: 1;">{total_clients}</h1>
+            <p style="margin: 0; font-size: 12px; opacity: 0.9;">Portfolio aktif</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col_k2:
         st.markdown(f"""
-        <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%); 
-                    border-radius: 10px; color: white;">
-            <h4 style="margin: 0;">Total Giro</h4>
-            <h1 style="margin: 10px 0; font-size: 36px;">Rp {total_giro:,.0f}M</h1>
-            <p style="margin: 0; font-size: 14px;">▲ +18% vs last month</p>
+        <div style="background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%); 
+                    border-radius: 12px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+                    height: 200px; padding: 20px 10px;
+                    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+            <h4 style="margin: 0 0 10px 0; font-size: 15px; font-weight: normal;">Total Giro</h4>
+            <h1 style="margin: 0 0 8px 0; font-size: 36px; font-weight: bold; line-height: 1.1; white-space: nowrap;">Rp {total_giro:,.0f}M</h1>
+            <p style="margin: 0; font-size: 11px; opacity: 0.9;">▲ +18% vs last month</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col_k3:
         st.markdown(f"""
-        <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
-                    border-radius: 10px; color: white;">
-            <h4 style="margin: 0;">Total Potensial</h4>
-            <h1 style="margin: 10px 0; font-size: 36px;">Rp {total_potential:,.0f}M</h1>
-            <p style="margin: 0; font-size: 14px;">Revenue opportunity</p>
+        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
+                    border-radius: 12px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+                    height: 200px; padding: 20px 10px;
+                    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+            <h4 style="margin: 0 0 10px 0; font-size: 15px; font-weight: normal;">Total Potensial</h4>
+            <h1 style="margin: 0 0 8px 0; font-size: 36px; font-weight: bold; line-height: 1.1; white-space: nowrap;">Rp {total_potential:,.0f}M</h1>
+            <p style="margin: 0; font-size: 11px; opacity: 0.9;">Revenue opportunity</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col_k4:
-        st.metric("Target SME", target_sme, f"{target_sme/total_clients*100:.1f}%")
+        target_sme_pct = (target_sme/total_clients*100) if total_clients > 0 else 0
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%); 
+                    border-radius: 12px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+                    height: 200px; padding: 20px 10px;
+                    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+            <h4 style="margin: 0 0 10px 0; font-size: 15px; font-weight: normal;">Target SME</h4>
+            <h1 style="margin: 0 0 8px 0; font-size: 56px; font-weight: bold; line-height: 1;">{target_sme}</h1>
+            <p style="margin: 0; font-size: 11px; opacity: 0.9;">▲ {target_sme_pct:.1f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
     with col_k5:
-        st.metric("Target Payroll", target_payroll, f"{target_payroll/total_clients*100:.1f}%")
+        target_payroll_pct = (target_payroll/total_clients*100) if total_clients > 0 else 0
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #f57c00 0%, #e65100 100%); 
+                    border-radius: 12px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+                    height: 200px; padding: 20px 10px;
+                    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+            <h4 style="margin: 0 0 10px 0; font-size: 15px; font-weight: normal;">Target Payroll</h4>
+            <h1 style="margin: 0 0 8px 0; font-size: 56px; font-weight: bold; line-height: 1;">{target_payroll}</h1>
+            <p style="margin: 0; font-size: 11px; opacity: 0.9;">▲ {target_payroll_pct:.1f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
     
     st.markdown("---")
     

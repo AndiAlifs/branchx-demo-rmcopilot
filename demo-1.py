@@ -307,8 +307,13 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Problem Statement
-    st.markdown("""
+    # Problem Statement - Enhanced with Metrics and Actions
+    sme_gap = df[df["SME Loan Status"] == "None"]
+    sme_gap_high_value = sme_gap[sme_gap["Avg Giro Balance (M)"] >= 2000]
+    sme_gap_percentage = (len(sme_gap) / len(df)) * 100
+    potential_revenue = sme_gap_high_value['Potential Value (M)'].sum()
+    
+    st.markdown(f"""
     <div style="
         background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
         padding: 20px;
@@ -320,16 +325,35 @@ with st.sidebar:
         <h3 style="color: white; margin: 0 0 10px 0; font-size: 18px;">
             LIQUIDITY UNBALANCE
         </h3>
-        <p style="color: white; margin: 0; font-size: 14px; line-height: 1.6;">
+        <p style="color: white; margin: 0 0 15px 0; font-size: 14px; line-height: 1.6;">
             Funding Giro tinggi namun lending SME sangat rendah. 
             <strong>Diperlukan tindakan segera</strong> untuk menyeimbangkan portfolio.
         </p>
+        <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span style="color: white; font-size: 12px;">Klien Tanpa Pinjaman SME</span>
+                <span style="color: white; font-weight: bold;">{len(sme_gap)} klien ({sme_gap_percentage:.0f}%)</span>
+            </div>
+            <div style="background: rgba(255,255,255,0.3); height: 6px; border-radius: 3px; overflow: hidden;">
+                <div style="background: white; width: {sme_gap_percentage}%; height: 100%;"></div>
+            </div>
+        </div>
+        <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 5px;">
+            <div style="color: white; font-size: 12px; margin-bottom: 3px;">Potensi Revenue</div>
+            <div style="color: white; font-size: 20px; font-weight: bold;">Rp {potential_revenue:.0f}M</div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Relationship Health Alert
+    if st.button("📊 View SME Opportunities", key="nav_sme", use_container_width=True):
+        st.session_state['nav_override'] = "Smart Opportunities"
+        st.rerun()
+    
+    # Relationship Health Alert - Enhanced
     loyal_clients = df[df["Tenure Years"] > 10]
     ignored_loyal = df[(df["Tenure Years"] > 10) & (df["Days Since Contact"] > 90)]
+    ignored_percentage = (len(ignored_loyal) / len(loyal_clients)) * 100 if len(loyal_clients) > 0 else 0
+    at_risk_value = ignored_loyal['Avg Giro Balance (M)'].sum()
     
     st.markdown(f"""
     <div style="
@@ -343,17 +367,44 @@ with st.sidebar:
         <h3 style="color: white; margin: 0 0 10px 0; font-size: 18px;">
             RELATIONSHIP RISK
         </h3>
-        <p style="color: white; margin: 0; font-size: 14px; line-height: 1.6;">
+        <p style="color: white; margin: 0 0 15px 0; font-size: 14px; line-height: 1.6;">
             <strong>{len(ignored_loyal)} nasabah loyal</strong> (>10 tahun) belum dihubungi lebih dari 90 hari. 
             Risiko churn tinggi jika tidak segera ditangani.
         </p>
+        <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span style="color: white; font-size: 12px;">Loyal Clients Terabaikan</span>
+                <span style="color: white; font-weight: bold;">{len(ignored_loyal)}/{len(loyal_clients)} ({ignored_percentage:.0f}%)</span>
+            </div>
+            <div style="background: rgba(255,255,255,0.3); height: 6px; border-radius: 3px; overflow: hidden;">
+                <div style="background: white; width: {ignored_percentage}%; height: 100%;"></div>
+            </div>
+        </div>
+        <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 5px;">
+            <div style="color: white; font-size: 12px; margin-bottom: 3px;">Nilai Portfolio At-Risk</div>
+            <div style="color: white; font-size: 20px; font-weight: bold;">Rp {at_risk_value:.0f}M</div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
+    if st.button("💝 View Relationship Health", key="nav_relationship", use_container_width=True):
+        st.session_state['nav_override'] = "Relationship Health"
+        st.rerun()
+    
     st.markdown("---")
     
-    # Navigation
-    view_mode = st.radio("📍 Navigasi", ["Smart Opportunities", "Relationship Health", "Data View", "Analytics"])
+    # Navigation - Check for override from alert buttons
+    if 'nav_override' in st.session_state and st.session_state['nav_override']:
+        default_view = st.session_state['nav_override']
+        st.session_state['nav_override'] = None  # Clear override
+    else:
+        default_view = "Smart Opportunities"
+    
+    view_mode = st.radio(
+        "📍 Navigasi", 
+        ["Smart Opportunities", "Relationship Health", "Data View", "Analytics"],
+        index=["Smart Opportunities", "Relationship Health", "Data View", "Analytics"].index(default_view) if default_view in ["Smart Opportunities", "Relationship Health", "Data View", "Analytics"] else 0
+    )
 
 # ========== MAIN LAYOUT ==========
 
@@ -1093,21 +1144,158 @@ else:
             
             st.header(f"🤖 Co-Pilot: {client_name}")
             
-            # Client Profile Section
+            # Client Profile Section - Enhanced with Color-Coded Cards
             st.subheader("📋 Profil Klien")
-            col_p1, col_p2, col_p3 = st.columns(3)
-            with col_p1:
-                st.metric("Saldo Giro", f"Rp {client_row['Avg Giro Balance (M)']}M")
-            with col_p2:
-                st.metric("Pinjaman SME", client_row['SME Loan Status'])
-            with col_p3:
-                st.metric("Payroll", client_row['Payroll Status'])
             
-            col_p4, col_p5 = st.columns(2)
-            with col_p4:
-                st.metric("Frekuensi Transaksi", client_row['Transaction Frequency'])
-            with col_p5:
-                st.metric("Nilai Potensial", f"Rp {client_row['Potential Value (M)']}M")
+            # Timeline/Context Row
+            col_ctx1, col_ctx2, col_ctx3 = st.columns(3)
+            
+            with col_ctx1:
+                tenure = client_row['Tenure Years']
+                loyalty_color = "#9b59b6" if client_row['Loyalty Status'] == "Platinum" else "#3498db" if client_row['Loyalty Status'] == "Gold" else "#95a5a6"
+                st.markdown(f"""
+                <div style="
+                    background: linear-gradient(135deg, {loyalty_color} 0%, {loyalty_color}cc 100%);
+                    padding: 15px;
+                    border-radius: 8px;
+                    text-align: center;
+                    color: white;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                ">
+                    <div style="font-size: 12px; opacity: 0.9;">Tenure</div>
+                    <div style="font-size: 24px; font-weight: bold; margin: 5px 0;">{tenure}</div>
+                    <div style="font-size: 11px;">{client_row['Loyalty Status']} Member</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with col_ctx2:
+                days_contact = client_row['Days Since Contact']
+                contact_color = "#27ae60" if days_contact < 30 else "#f39c12" if days_contact < 90 else "#e74c3c"
+                contact_status = "Good" if days_contact < 30 else "Warning" if days_contact < 90 else "Critical"
+                st.markdown(f"""
+                <div style="
+                    background: linear-gradient(135deg, {contact_color} 0%, {contact_color}cc 100%);
+                    padding: 15px;
+                    border-radius: 8px;
+                    text-align: center;
+                    color: white;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                ">
+                    <div style="font-size: 12px; opacity: 0.9;">Last Contact</div>
+                    <div style="font-size: 24px; font-weight: bold; margin: 5px 0;">{days_contact}</div>
+                    <div style="font-size: 11px;">hari lalu • {contact_status}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with col_ctx3:
+                freq = client_row['Transaction Frequency']
+                freq_color = "#27ae60" if freq == "High" else "#f39c12" if freq == "Medium" else "#e74c3c"
+                freq_icon = "🟢" if freq == "High" else "🟡" if freq == "Medium" else "🔴"
+                st.markdown(f"""
+                <div style="
+                    background: linear-gradient(135deg, {freq_color} 0%, {freq_color}cc 100%);
+                    padding: 15px;
+                    border-radius: 8px;
+                    text-align: center;
+                    color: white;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                ">
+                    <div style="font-size: 12px; opacity: 0.9;">Frekuensi</div>
+                    <div style="font-size: 24px; font-weight: bold; margin: 5px 0;">{freq_icon}</div>
+                    <div style="font-size: 11px;">{freq}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Financial Metrics Row with Color-Coded Cards
+            col_fin1, col_fin2 = st.columns(2)
+            
+            with col_fin1:
+                giro_val = client_row['Avg Giro Balance (M)']
+                st.markdown(f"""
+                <div style="
+                    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+                    padding: 15px;
+                    border-radius: 8px;
+                    color: white;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    margin-bottom: 10px;
+                ">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="font-size: 28px;">💰</div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 12px; opacity: 0.9;">Saldo Giro</div>
+                            <div style="font-size: 22px; font-weight: bold;">Rp {giro_val}M</div>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                potential_val = client_row['Potential Value (M)']
+                st.markdown(f"""
+                <div style="
+                    background: linear-gradient(135deg, #16a085 0%, #138d75 100%);
+                    padding: 15px;
+                    border-radius: 8px;
+                    color: white;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                ">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="font-size: 28px;">📈</div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 12px; opacity: 0.9;">Nilai Potensial</div>
+                            <div style="font-size: 22px; font-weight: bold;">Rp {potential_val}M</div>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with col_fin2:
+                sme_status = client_row['SME Loan Status']
+                sme_color = "#e74c3c" if sme_status == "None" else "#27ae60"
+                sme_icon = "⚠️" if sme_status == "None" else "✅"
+                sme_label = "Belum Ada" if sme_status == "None" else "Aktif"
+                st.markdown(f"""
+                <div style="
+                    background: linear-gradient(135deg, {sme_color} 0%, {sme_color}cc 100%);
+                    padding: 15px;
+                    border-radius: 8px;
+                    color: white;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    margin-bottom: 10px;
+                ">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="font-size: 28px;">{sme_icon}</div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 12px; opacity: 0.9;">Pinjaman SME</div>
+                            <div style="font-size: 22px; font-weight: bold;">{sme_label}</div>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                payroll_status = client_row['Payroll Status']
+                payroll_color = "#f39c12" if payroll_status == "None" else "#27ae60"
+                payroll_icon = "💼" if payroll_status == "None" else "✅"
+                payroll_label = "Belum Ada" if payroll_status == "None" else "Aktif"
+                st.markdown(f"""
+                <div style="
+                    background: linear-gradient(135deg, {payroll_color} 0%, {payroll_color}cc 100%);
+                    padding: 15px;
+                    border-radius: 8px;
+                    color: white;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                ">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="font-size: 28px;">{payroll_icon}</div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 12px; opacity: 0.9;">Payroll</div>
+                            <div style="font-size: 22px; font-weight: bold;">{payroll_label}</div>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
             
             st.markdown("---")
             

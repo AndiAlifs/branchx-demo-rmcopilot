@@ -810,17 +810,50 @@ elif view_mode == "Analytics":
         st.write("**5 Klien Prioritas Tertinggi (berdasarkan Nilai Potensial):**")
         top_5 = df.nlargest(5, 'Potential Value (M)')[['Client Name', 'Opportunity Tag', 'Potential Value (M)']]
         
-        for idx, row in top_5.iterrows():
-            st.write(f"🎯 **{row['Client Name']}**")
-            st.write(f"   Tag: {row['Opportunity Tag']} | Nilai: Rp {row['Potential Value (M)']}M")
+        # Create styled dataframe
+        top_5_display = top_5.copy()
+        top_5_display['Rank'] = [1, 2, 3, 4, 5]
+        top_5_display = top_5_display[['Rank', 'Client Name', 'Opportunity Tag', 'Potential Value (M)']]
+        top_5_display.columns = ['Rank', 'Nama Klien', 'Tag', 'Nilai Potensial (M)']
+        
+        st.dataframe(
+            top_5_display,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Rank": st.column_config.NumberColumn("Rank"),
+                "Nama Klien": st.column_config.TextColumn("Nama Klien"),
+                "Tag": st.column_config.TextColumn("Opportunity Tag"),
+                "Nilai Potensial (M)": st.column_config.NumberColumn("Nilai Potensial", format="Rp %.1f M"),
+            }
+        )
     
     with col_rec2:
         st.write("**Aksi Strategis Minggu Ini:**")
-        st.write("1. ✅ Hubungi semua klien PRIORITAS TINGGI (target Pinjaman SME)")
-        st.write(f"2. 📞 Lakukan {target_sme} pitching pinjaman SME")
-        st.write(f"3. 💼 Jadwalkan {min(target_payroll, 5)} demo payroll")
-        st.write(f"4. ⚠️ Review {len(low_activity)} akun dengan aktivitas rendah")
-        st.write("5. 📊 Update status pipeline setiap hari")
+        
+        # Create action items table
+        action_items = pd.DataFrame({
+            'Priority': ['🔴', '🔴', '🟡', '🟡', '🟢'],
+            'Action': [
+                'Hubungi semua klien PRIORITAS TINGGI',
+                f'Lakukan {target_sme} pitching pinjaman SME',
+                f'Jadwalkan {min(target_payroll, 5)} demo payroll',
+                f'Review {len(low_activity)} akun aktivitas rendah',
+                'Update status pipeline setiap hari'
+            ],
+            'Target': ['Semua', f'{target_sme} klien', f'{min(target_payroll, 5)} klien', f'{len(low_activity)} klien', 'Harian']
+        })
+        
+        st.dataframe(
+            action_items,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Priority": st.column_config.TextColumn(""),
+                "Action": st.column_config.TextColumn("Aksi"),
+                "Target": st.column_config.TextColumn("Target"),
+            }
+        )
 
 else:
     # Original two-column layout for Smart Opportunities

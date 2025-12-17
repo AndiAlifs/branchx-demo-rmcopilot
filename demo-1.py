@@ -904,57 +904,155 @@ elif view_mode == "Analytics":
 
 else:
     # Original two-column layout for Smart Opportunities
+    
+    # ========== SUMMARY DASHBOARD AT TOP ==========
+    st.header("🎯 Peluang Hari Ini")
+    
+    # Filter high-priority leads
+    priority_leads = df[df["Opportunity Tag"].str.contains("TARGET")].nlargest(5, "Potential Value (M)")
+    
+    # Visual Summary Dashboard
+    col_sum1, col_sum2, col_sum3, col_sum4 = st.columns(4)
+    
+    with col_sum1:
+        st.metric(
+            "Total Leads Prioritas",
+            len(priority_leads),
+            f"{len(priority_leads)/len(df)*100:.0f}% dari portfolio"
+        )
+    
+    with col_sum2:
+        total_potential = priority_leads['Potential Value (M)'].sum()
+        st.metric(
+            "Total Nilai Potensial",
+            f"Rp {total_potential:.0f}M",
+            "Revenue opportunity"
+        )
+    
+    with col_sum3:
+        target_sme_count = len(priority_leads[priority_leads['Opportunity Tag'] == 'TARGET SME LOAN'])
+        st.metric(
+            "SME Loan Targets",
+            target_sme_count,
+            f"Rp {priority_leads[priority_leads['Opportunity Tag'] == 'TARGET SME LOAN']['Potential Value (M)'].sum():.0f}M"
+        )
+    
+    with col_sum4:
+        avg_days_contact = priority_leads['Days Since Contact'].mean()
+        contact_status = "Good" if avg_days_contact < 30 else "Warning" if avg_days_contact < 60 else "Critical"
+        st.metric(
+            "Avg Days Since Contact",
+            f"{avg_days_contact:.0f} hari",
+            contact_status,
+            delta_color="inverse" if avg_days_contact > 30 else "normal"
+        )
+    
+    st.markdown("---")
+    
     col_middle, col_right = st.columns([4, 6])
 
     # ========== ZONE 2: MIDDLE COLUMN (ACTION LIST) ==========
     with col_middle:
-        st.header("🎯 Peluang Hari Ini")
+        st.subheader(f"📋 {len(priority_leads)} Leads Aktif")
         
-        # Filter high-priority leads
-        priority_leads = df[df["Opportunity Tag"].str.contains("TARGET")].nlargest(5, "Potential Value (M)")
-        
-        st.markdown(f"**{len(priority_leads)} Leads Prioritas Tinggi** | Target: Tutup 3 deals minggu ini")
-        st.markdown("---")
-        
-        # Display top leads as cards
+        # Display top leads as enhanced visual cards
         for idx, row in priority_leads.iterrows():
             with st.container():
                 # Card styling with border
                 if row["Opportunity Tag"] == "TARGET SME LOAN":
-                    border_color = "#e74c3c"  # Red
+                    border_color = "#e74c3c"
+                    bg_color = "#fee"
                     icon = "💰"
+                    tag_badge = "SME LOAN"
                 else:
-                    border_color = "#3498db"  # Blue
+                    border_color = "#3498db"
+                    bg_color = "#eef"
                     icon = "💼"
+                    tag_badge = "PAYROLL"
                 
-                # Determine frequency color
+                # Determine frequency color and badge
                 freq = row['Transaction Frequency']
                 if freq == "Low":
-                    freq_color = "#e74c3c"  # Red
+                    freq_color = "#e74c3c"
+                    freq_badge = "🔴"
                 elif freq == "Medium":
-                    freq_color = "#f39c12"  # Yellow/Orange
-                else:  # High
-                    freq_color = "#27ae60"  # Green
+                    freq_color = "#f39c12"
+                    freq_badge = "🟡"
+                else:
+                    freq_color = "#27ae60"
+                    freq_badge = "🟢"
                 
+                # Calculate priority score (0-100)
+                priority_score = min(100, int((row['Potential Value (M)'] / 100) + (50 if freq == "High" else 25 if freq == "Medium" else 0)))
+                
+                # Card header with visual elements
                 st.markdown(f"""
-                <div style="border-left: 4px solid {border_color}; padding-left: 15px; margin-bottom: 15px;">
-                    <h4>{icon} {row['Client Name']}</h4>
+                <div style="
+                    border-left: 6px solid {border_color};
+                    background: {bg_color};
+                    padding: 15px;
+                    border-radius: 8px;
+                    margin-bottom: 15px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0;">{icon} {row['Client Name']}</h4>
+                        <span style="
+                            background: {border_color};
+                            color: white;
+                            padding: 4px 12px;
+                            border-radius: 12px;
+                            font-size: 12px;
+                            font-weight: bold;
+                        ">{tag_badge}</span>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                col_a, col_b, col_c = st.columns([3, 2, 2])
-                with col_a:
-                    st.write(f"**Tag:** {row['Opportunity Tag']}")
-                    st.write(f"**Giro:** Rp {row['Avg Giro Balance (M)']}M")
-                with col_b:
-                    st.write(f"**Potensial:** Rp {row['Potential Value (M)']}M")
-                    st.markdown(f"**Frek:** <span style='color: {freq_color}; font-weight: bold;'>{freq}</span>", unsafe_allow_html=True)
-                with col_c:
-                    if st.button(f"🔍 Analisis", key=f"btn_{idx}"):
-                        st.session_state['selected_client'] = row['Client Name']
-                        st.rerun()
+                # Metrics row with visual indicators
+                col_a, col_b = st.columns([3, 2])
                 
-                st.markdown("---")
+                with col_a:
+                    # Giro with progress bar
+                    giro_val = row['Avg Giro Balance (M)']
+                    giro_pct = min(100, (giro_val / 10000) * 100)
+                    st.markdown(f"**Saldo Giro:** Rp {giro_val}M")
+                    st.progress(giro_pct / 100)
+                    
+                    # Potential value with progress bar
+                    potential_val = row['Potential Value (M)']
+                    potential_pct = min(100, (potential_val / 3000) * 100)
+                    st.markdown(f"**Nilai Potensial:** Rp {potential_val}M")
+                    st.progress(potential_pct / 100)
+                
+                with col_b:
+                    # Frequency badge
+                    st.markdown(f"""
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <div style="font-size: 11px; color: #666;">Frekuensi Transaksi</div>
+                        <div style="font-size: 24px;">{freq_badge}</div>
+                        <div style="color: {freq_color}; font-weight: bold;">{freq}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Priority score gauge
+                    st.markdown(f"""
+                    <div style="text-align: center;">
+                        <div style="font-size: 11px; color: #666;">Priority Score</div>
+                        <div style="
+                            font-size: 28px;
+                            font-weight: bold;
+                            color: {border_color};
+                        ">{priority_score}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # Action button
+                if st.button(f"🔍 Analisis Detail", key=f"btn_{idx}", use_container_width=True):
+                    st.session_state['selected_client'] = row['Client Name']
+                    st.rerun()
+                
+                st.markdown("<br>", unsafe_allow_html=True)
 
     # ========== ZONE 3: RIGHT COLUMN (CO-PILOT PANEL) ==========
     with col_right:
@@ -1054,12 +1152,56 @@ else:
                     st.write(f"**Tindakan Selanjutnya:** {update['next_action']}")
         
         else:
-            # Empty state
+            # Empty state with visual tips cards
             st.info("Pilih klien dari daftar peluang untuk mengaktifkan analisis Co-Pilot")
             
             st.markdown("---")
-            st.markdown("### 💡 Tips Cepat")
-            st.write("1. **Prioritas:** Fokus pada leads dengan tag 'TARGET SME LOAN'")
-            st.write("2. **Waktu Terbaik:** Hubungi antara jam 10-11 pagi atau 2-3 sore")
-            st.write("3. **Pendekatan:** Gunakan personal touch, referensi riwayat transaksi")
-            st.write("4. **Follow-up:** Jangan lebih dari 3 hari untuk merespons")
+            st.markdown("### 💡 Tips & Best Practices")
+            
+            # Visual tip cards
+            tip_cards = [
+                {
+                    "icon": "🎯",
+                    "title": "Prioritas",
+                    "desc": "Fokus pada leads dengan tag TARGET SME LOAN",
+                    "color": "#e74c3c"
+                },
+                {
+                    "icon": "⏰",
+                    "title": "Waktu Terbaik",
+                    "desc": "Hubungi antara jam 10-11 pagi atau 2-3 sore",
+                    "color": "#3498db"
+                },
+                {
+                    "icon": "🤝",
+                    "title": "Pendekatan",
+                    "desc": "Gunakan personal touch, referensi riwayat transaksi",
+                    "color": "#9b59b6"
+                },
+                {
+                    "icon": "📞",
+                    "title": "Follow-up",
+                    "desc": "Jangan lebih dari 3 hari untuk merespons",
+                    "color": "#27ae60"
+                }
+            ]
+            
+            for tip in tip_cards:
+                st.markdown(f"""
+                <div style="
+                    border-left: 4px solid {tip['color']};
+                    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+                    padding: 15px;
+                    margin-bottom: 12px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+                ">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="font-size: 32px;">{tip['icon']}</div>
+                        <div>
+                            <div style="font-weight: bold; color: {tip['color']}; margin-bottom: 4px;">{tip['title']}</div>
+                            <div style="font-size: 14px; color: #555;">{tip['desc']}</div>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)

@@ -2,7 +2,21 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime, timedelta
+
+# Custom Color Scheme for Banking Dashboard
+OPPORTUNITY_COLORS = {
+    'TARGET SME LOAN': '#d32f2f',      # Red - Critical opportunity
+    'TARGET PAYROLL': '#f57c00',       # Orange - Medium priority
+    'MAINTAIN': '#388e3c'              # Green - Stable
+}
+
+LOYALTY_COLORS = {
+    'Platinum': '#9c27b0',
+    'Gold': '#ffa000',
+    'Silver': '#757575'
+}
 
 # Set Layout to Wide and Force Light Mode
 st.set_page_config(
@@ -297,6 +311,22 @@ with st.sidebar:
             delta="-Rp 144M",
             delta_color="inverse"
         )
+    
+    # Enhanced visual progress bar for SME penetration
+    st.markdown("### SME Penetration")
+    sme_penetration = 0.33
+    color = '#d32f2f' if sme_penetration < 0.4 else '#f57c00' if sme_penetration < 0.7 else '#388e3c'
+    
+    st.markdown(f"""
+    <style>
+    .stProgress > div > div > div > div {{
+        background-color: {color};
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+    
+    st.progress(sme_penetration)
+    st.caption(f"Target: 100% | Current: {sme_penetration*100:.0f}%")
     
     st.metric(
         label="Tabungan (Retail)", 
@@ -661,9 +691,167 @@ elif view_mode == "Data View":
         (df["Avg Giro Balance (M)"] >= min_giro)
     ]
     
+    st.markdown("---")
+    
+    # ========== ENHANCED RINGKASAN STATISTIK (MOVED TO TOP) ==========
+    st.subheader("📊 Ringkasan Statistik")
+    
+    # Calculate key metrics
+    total_giro = filtered_df['Avg Giro Balance (M)'].sum()
+    total_potential = filtered_df['Potential Value (M)'].sum()
+    target_count = len(filtered_df[filtered_df["Opportunity Tag"].str.contains("TARGET")])
+    no_sme = len(filtered_df[filtered_df["SME Loan Status"] == "None"])
+    sme_active = len(filtered_df[filtered_df["SME Loan Status"] == "Active"])
+    payroll_active = len(filtered_df[filtered_df["Payroll Status"] == "Active"])
+    avg_tenure = filtered_df['Tenure Years'].mean()
+    avg_giro = filtered_df['Avg Giro Balance (M)'].mean()
+    
+    # Top Row - Main KPIs with Enhanced Cards
+    col_stat1, col_stat2, col_stat3, col_stat4 = st.columns(4)
+    
+    with col_stat1:
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%); 
+                    padding: 25px; border-radius: 12px; text-align: center; color: white;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h4 style="margin: 0; font-size: 14px; opacity: 0.9;">Total Giro</h4>
+            <h1 style="margin: 10px 0; font-size: 32px; font-weight: bold;">Rp {total_giro:,.0f}M</h1>
+            <p style="margin: 0; font-size: 12px; opacity: 0.8;">Avg: Rp {avg_giro:,.0f}M per klien</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col_stat2:
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
+                    padding: 25px; border-radius: 12px; text-align: center; color: white;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h4 style="margin: 0; font-size: 14px; opacity: 0.9;">Total Potensial</h4>
+            <h1 style="margin: 10px 0; font-size: 32px; font-weight: bold;">Rp {total_potential:,.0f}M</h1>
+            <p style="margin: 0; font-size: 12px; opacity: 0.8;">Revenue opportunity</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col_stat3:
+        target_percentage = (target_count / len(filtered_df) * 100) if len(filtered_df) > 0 else 0
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%); 
+                    padding: 25px; border-radius: 12px; text-align: center; color: white;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h4 style="margin: 0; font-size: 14px; opacity: 0.9;">Klien Target</h4>
+            <h1 style="margin: 10px 0; font-size: 32px; font-weight: bold;">{target_count}</h1>
+            <p style="margin: 0; font-size: 12px; opacity: 0.8;">{target_percentage:.1f}% dari portfolio</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col_stat4:
+        sme_gap_percentage = (no_sme / len(filtered_df) * 100) if len(filtered_df) > 0 else 0
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #f57c00 0%, #e65100 100%); 
+                    padding: 25px; border-radius: 12px; text-align: center; color: white;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h4 style="margin: 0; font-size: 14px; opacity: 0.9;">Tanpa Pinjaman SME</h4>
+            <h1 style="margin: 10px 0; font-size: 32px; font-weight: bold;">{no_sme}</h1>
+            <p style="margin: 0; font-size: 12px; opacity: 0.8;">{sme_gap_percentage:.1f}% - Opportunity!</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Second Row - Penetration Metrics with Progress Bars
+    col_pen1, col_pen2, col_pen3, col_pen4 = st.columns(4)
+    
+    with col_pen1:
+        sme_penetration = (sme_active / len(filtered_df)) if len(filtered_df) > 0 else 0
+        st.markdown("**SME Loan Penetration**")
+        st.progress(sme_penetration)
+        st.caption(f"{sme_active}/{len(filtered_df)} klien ({sme_penetration*100:.1f}%)")
+    
+    with col_pen2:
+        payroll_penetration = (payroll_active / len(filtered_df)) if len(filtered_df) > 0 else 0
+        st.markdown("**Payroll Penetration**")
+        st.progress(payroll_penetration)
+        st.caption(f"{payroll_active}/{len(filtered_df)} klien ({payroll_penetration*100:.1f}%)")
+    
+    with col_pen3:
+        full_package = len(filtered_df[(filtered_df["SME Loan Status"] == "Active") & (filtered_df["Payroll Status"] == "Active")])
+        full_penetration = (full_package / len(filtered_df)) if len(filtered_df) > 0 else 0
+        st.markdown("**Full Package (SME+Payroll)**")
+        st.progress(full_penetration)
+        st.caption(f"{full_package}/{len(filtered_df)} klien ({full_penetration*100:.1f}%)")
+    
+    with col_pen4:
+        st.metric("Avg Tenure", f"{avg_tenure:.1f} tahun", "Loyalty indicator")
+    
+    # Third Row - Opportunity Breakdown Chart
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    col_chart1, col_chart2 = st.columns(2)
+    
+    with col_chart1:
+        st.markdown("**📈 Opportunity Breakdown**")
+        tag_counts = filtered_df['Opportunity Tag'].value_counts()
+        
+        fig_breakdown = px.bar(
+            x=tag_counts.values,
+            y=tag_counts.index,
+            orientation='h',
+            color=tag_counts.index,
+            color_discrete_map=OPPORTUNITY_COLORS,
+            text=tag_counts.values
+        )
+        fig_breakdown.update_traces(texttemplate='%{text} klien', textposition='outside')
+        fig_breakdown.update_layout(
+            showlegend=False,
+            height=200,
+            margin=dict(t=10, b=10, l=10, r=80),
+            xaxis_title="",
+            yaxis_title=""
+        )
+        st.plotly_chart(fig_breakdown, use_container_width=True)
+    
+    with col_chart2:
+        st.markdown("**💰 Value Distribution**")
+        
+        value_by_tag = filtered_df.groupby('Opportunity Tag')['Potential Value (M)'].sum().sort_values(ascending=True)
+        
+        fig_value = px.bar(
+            x=value_by_tag.values,
+            y=value_by_tag.index,
+            orientation='h',
+            color=value_by_tag.index,
+            color_discrete_map=OPPORTUNITY_COLORS,
+            text=value_by_tag.values
+        )
+        fig_value.update_traces(texttemplate='Rp %{text:,.0f}M', textposition='outside')
+        fig_value.update_layout(
+            showlegend=False,
+            height=200,
+            margin=dict(t=10, b=10, l=10, r=100),
+            xaxis_title="",
+            yaxis_title=""
+        )
+        st.plotly_chart(fig_value, use_container_width=True)
+    
+    st.markdown("---")
+    
+    # Data Table Section
     st.markdown(f"Menampilkan **{len(filtered_df)}** klien dari total **{len(df)}** klien")
+    
+    # Apply conditional formatting with styled dataframe
+    def highlight_priority(row):
+        if row['Opportunity Tag'] == 'TARGET SME LOAN':
+            return ['background-color: #ffebee'] * len(row)
+        elif row['Opportunity Tag'] == 'TARGET PAYROLL':
+            return ['background-color: #fff3e0'] * len(row)
+        elif row['Days Since Contact'] > 90:
+            return ['background-color: #fce4ec'] * len(row)
+        return [''] * len(row)
+    
+    # Create a copy for styling
+    display_df = filtered_df.copy()
+    
     st.dataframe(
-        filtered_df,
+        display_df.style.apply(highlight_priority, axis=1),
         use_container_width=True,
         height=600,
         column_config={
@@ -677,29 +865,22 @@ elif view_mode == "Data View":
         }
     )
     
-    # Summary statistics
-    st.markdown("---")
-    st.subheader("📊 Ringkasan Statistik")
-    col_s1, col_s2, col_s3, col_s4 = st.columns(4)
-    with col_s1:
-        st.metric("Total Giro", f"Rp {filtered_df['Avg Giro Balance (M)'].sum():.1f}M")
-    with col_s2:
-        st.metric("Total Potensial", f"Rp {filtered_df['Potential Value (M)'].sum():.1f}M")
-    with col_s3:
-        target_count = len(filtered_df[filtered_df["Opportunity Tag"].str.contains("TARGET")])
-        st.metric("Klien Target", target_count)
-    with col_s4:
-        no_sme = len(filtered_df[filtered_df["SME Loan Status"] == "None"])
-        st.metric("Tanpa Pinjaman SME", no_sme)
+    # Legend for color coding
+    col_leg1, col_leg2, col_leg3 = st.columns(3)
+    with col_leg1:
+        st.markdown("🔴 **Red highlight:** TARGET SME LOAN")
+    with col_leg2:
+        st.markdown("🟠 **Orange highlight:** TARGET PAYROLL")
+    with col_leg3:
+        st.markdown("🟣 **Pink highlight:** Not contacted >90 days")
 
 elif view_mode == "Analytics":
     # Full-width analytics dashboard
     st.header("📊 Dashboard Analitik Portfolio")
     st.markdown("---")
     
-    # Top KPI Row
+    # Top KPI Row with Enhanced Styling
     st.subheader("Indikator Kinerja Utama")
-    col_k1, col_k2, col_k3, col_k4, col_k5 = st.columns(5)
     
     total_clients = len(df)
     total_giro = df['Avg Giro Balance (M)'].sum()
@@ -707,16 +888,98 @@ elif view_mode == "Analytics":
     target_sme = len(df[df["Opportunity Tag"] == "TARGET SME LOAN"])
     target_payroll = len(df[df["Opportunity Tag"] == "TARGET PAYROLL"])
     
+    col_k1, col_k2, col_k3, col_k4, col_k5 = st.columns(5)
+    
     with col_k1:
-        st.metric("Total Klien", total_clients)
+        st.markdown(f"""
+        <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    border-radius: 10px; color: white;">
+            <h4 style="margin: 0;">Total Klien</h4>
+            <h1 style="margin: 10px 0; font-size: 36px;">{total_clients}</h1>
+            <p style="margin: 0; font-size: 14px;">Portfolio aktif</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
     with col_k2:
-        st.metric("Total Giro", f"Rp {total_giro:,.0f}M")
+        st.markdown(f"""
+        <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%); 
+                    border-radius: 10px; color: white;">
+            <h4 style="margin: 0;">Total Giro</h4>
+            <h1 style="margin: 10px 0; font-size: 36px;">Rp {total_giro:,.0f}M</h1>
+            <p style="margin: 0; font-size: 14px;">▲ +18% vs last month</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
     with col_k3:
-        st.metric("Total Potensial", f"Rp {total_potential:,.0f}M")
+        st.markdown(f"""
+        <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
+                    border-radius: 10px; color: white;">
+            <h4 style="margin: 0;">Total Potensial</h4>
+            <h1 style="margin: 10px 0; font-size: 36px;">Rp {total_potential:,.0f}M</h1>
+            <p style="margin: 0; font-size: 14px;">Revenue opportunity</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
     with col_k4:
         st.metric("Target SME", target_sme, f"{target_sme/total_clients*100:.1f}%")
     with col_k5:
         st.metric("Target Payroll", target_payroll, f"{target_payroll/total_clients*100:.1f}%")
+    
+    st.markdown("---")
+    
+    # Monthly Trend Analysis
+    st.subheader("📈 Trend Bulanan - SME Loan Achievement")
+    
+    # Simulate 6-month trend
+    months = pd.date_range(end=datetime.now(), periods=6, freq='M')
+    trend_data = pd.DataFrame({
+        'Month': months.strftime('%b %Y'),
+        'SME Loans (%)': [25, 27, 29, 31, 32, 33],
+        'Target (%)': [100] * 6
+    })
+    
+    fig_trend = go.Figure()
+    
+    # Add actual line
+    fig_trend.add_trace(go.Scatter(
+        x=trend_data['Month'],
+        y=trend_data['SME Loans (%)'],
+        mode='lines+markers+text',
+        name='Actual',
+        line=dict(color='#d32f2f', width=3),
+        marker=dict(size=10),
+        text=trend_data['SME Loans (%)'],
+        textposition='top center',
+        texttemplate='%{text}%'
+    ))
+    
+    # Add target line
+    fig_trend.add_trace(go.Scatter(
+        x=trend_data['Month'],
+        y=trend_data['Target (%)'],
+        mode='lines',
+        name='Target',
+        line=dict(color='#2e7d32', width=2, dash='dash')
+    ))
+    
+    fig_trend.update_layout(
+        height=280,
+        yaxis_title='Achievement (%)',
+        xaxis_title='',
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(t=40, b=20, l=20, r=20)
+    )
+    
+    st.plotly_chart(fig_trend, use_container_width=True)
+    
+    col_trend1, col_trend2, col_trend3 = st.columns(3)
+    with col_trend1:
+        st.metric("Current Month", "33%", "+1% MoM")
+    with col_trend2:
+        st.metric("Gap to Target", "-67%", "Action needed!", delta_color="inverse")
+    with col_trend3:
+        st.metric("Projected Next Month", "35%", "+2% forecast")
     
     st.markdown("---")
     
@@ -730,23 +993,28 @@ elif view_mode == "Analytics":
         chart_data = pd.DataFrame({
             'Tag': tag_counts.index,
             'Jumlah': tag_counts.values
-        })
+        }).sort_values('Jumlah', ascending=False)
         
-        # Create pie chart data
-        import plotly.express as px
-        fig1 = px.pie(
-            chart_data, 
-            values='Jumlah', 
-            names='Tag',
-            title='',
-            hole=0.3,
-            color_discrete_sequence=px.colors.qualitative.Set3
+        # Replace pie with horizontal bar chart for better comparison
+        fig1 = px.bar(
+            chart_data,
+            y='Tag',
+            x='Jumlah',
+            color='Tag',
+            color_discrete_map=OPPORTUNITY_COLORS,
+            text='Jumlah',
+            orientation='h'
         )
-        fig1.update_traces(textposition='inside', textinfo='percent+label')
+        fig1.update_traces(
+            texttemplate='%{text} klien<br>(%{x:.1%} of total)', 
+            textposition='outside'
+        )
         fig1.update_layout(
-            showlegend=True,
+            showlegend=False,
             height=350,
-            margin=dict(t=0, b=0, l=0, r=0)
+            margin=dict(t=10, b=0, l=0, r=80),
+            xaxis_title="Jumlah Klien",
+            yaxis_title=""
         )
         st.plotly_chart(fig1, use_container_width=True)
         
@@ -775,22 +1043,21 @@ elif view_mode == "Analytics":
         chart_data2 = pd.DataFrame({
             'Rentang': range_counts.index.astype(str),
             'Jumlah': range_counts.values
-        })
+        }).sort_values('Jumlah', ascending=False)
         
-        # Create pie chart for giro distribution
-        fig2 = px.pie(
+        # Create funnel chart for better hierarchy visualization
+        fig2 = px.funnel(
             chart_data2,
-            values='Jumlah',
-            names='Rentang',
-            title='',
-            hole=0.3,
-            color_discrete_sequence=px.colors.qualitative.Pastel
+            x='Jumlah',
+            y='Rentang',
+            color='Rentang',
+            color_discrete_sequence=['#1976d2', '#42a5f5', '#90caf9', '#bbdefb']
         )
-        fig2.update_traces(textposition='inside', textinfo='percent+label')
+        fig2.update_traces(textinfo='value+percent total')
         fig2.update_layout(
-            showlegend=True,
+            showlegend=False,
             height=350,
-            margin=dict(t=0, b=0, l=0, r=0)
+            margin=dict(t=10, b=0, l=0, r=0)
         )
         st.plotly_chart(fig2, use_container_width=True)
         
@@ -849,6 +1116,46 @@ elif view_mode == "Analytics":
     
     st.markdown("---")
     
+    # Portfolio Heat Map
+    st.subheader("🗺️ Portfolio Heat Map: Giro vs Aktivitas")
+    
+    fig_scatter = px.scatter(
+        df,
+        x='Days Since Contact',
+        y='Avg Giro Balance (M)',
+        size='Potential Value (M)',
+        color='Opportunity Tag',
+        color_discrete_map=OPPORTUNITY_COLORS,
+        hover_data=['Client Name', 'SME Loan Status', 'Payroll Status', 'Tenure Years'],
+        labels={'Days Since Contact': 'Hari Sejak Kontak Terakhir',
+                'Avg Giro Balance (M)': 'Saldo Giro (Juta)'}
+    )
+    
+    # Add quadrant lines
+    fig_scatter.add_hline(y=2000, line_dash="dash", line_color="red", opacity=0.5, annotation_text="High Value Threshold")
+    fig_scatter.add_vline(x=30, line_dash="dash", line_color="orange", opacity=0.5, annotation_text="Contact Threshold")
+    
+    fig_scatter.update_layout(
+        height=450,
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    
+    st.plotly_chart(fig_scatter, use_container_width=True)
+    
+    # Quadrant explanation
+    col_q1, col_q2, col_q3, col_q4 = st.columns(4)
+    with col_q1:
+        st.info("**🔴 Top Right:** High Value + Recent Contact = Ideal")
+    with col_q2:
+        st.warning("**🟡 Top Left:** High Value + Old Contact = URGENT!")
+    with col_q3:
+        st.success("**🟢 Bottom Right:** Low Value + Recent = Good")
+    with col_q4:
+        st.error("**⚫ Bottom Left:** Low Value + Old = Re-evaluate")
+    
+    st.markdown("---")
+    
     # Priority Matrix
     st.subheader("🎯 Matriks Prioritas Aksi")
     
@@ -878,6 +1185,51 @@ elif view_mode == "Analytics":
         st.metric("Aktivitas Transaksi Rendah", len(low_activity))
         st.write("**Risiko Churn:** Tinggi")
         st.write("**Tindakan:** Review relasi & tingkatkan engagement")
+    
+    st.markdown("---")
+    
+    # Client Journey Sankey
+    st.subheader("🔄 Customer Journey Flow")
+    
+    # Calculate flows
+    giro_only = len(df[(df['SME Loan Status'] == 'None') & (df['Payroll Status'] == 'None')])
+    giro_sme = len(df[(df['SME Loan Status'] == 'Active') & (df['Payroll Status'] == 'None')])
+    giro_payroll = len(df[(df['SME Loan Status'] == 'None') & (df['Payroll Status'] == 'Active')])
+    full_package = len(df[(df['SME Loan Status'] == 'Active') & (df['Payroll Status'] == 'Active')])
+    
+    fig_sankey = go.Figure(data=[go.Sankey(
+        node=dict(
+            pad=15,
+            thickness=20,
+            line=dict(color="black", width=0.5),
+            label=["Total Clients", "Giro Only", "+ SME Loan", "+ Payroll", "Full Package"],
+            color=["#1976d2", "#ff9800", "#4caf50", "#9c27b0", "#ffd700"]
+        ),
+        link=dict(
+            source=[0, 0, 0, 0],
+            target=[1, 2, 3, 4],
+            value=[giro_only, giro_sme, giro_payroll, full_package],
+            color=["rgba(255, 152, 0, 0.4)", "rgba(76, 175, 80, 0.4)", 
+                   "rgba(156, 39, 176, 0.4)", "rgba(255, 215, 0, 0.6)"]
+        )
+    )])
+    
+    fig_sankey.update_layout(
+        title_text="Product Penetration Flow",
+        height=300,
+        font_size=12,
+        margin=dict(t=40, b=10, l=10, r=10)
+    )
+    
+    st.plotly_chart(fig_sankey, use_container_width=True)
+    
+    col_sk1, col_sk2, col_sk3 = st.columns(3)
+    with col_sk1:
+        st.metric("Giro Only", giro_only, f"{giro_only/len(df)*100:.1f}% - Opportunity!")
+    with col_sk2:
+        st.metric("Single Product", giro_sme + giro_payroll, "Cross-sell potential")
+    with col_sk3:
+        st.metric("Full Package", full_package, f"{full_package/len(df)*100:.1f}% - Excellent!")
     
     st.markdown("---")
     

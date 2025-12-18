@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -501,8 +502,26 @@ if view_mode == "Relationship Health":
                 st.write(f"**Catatan Terakhir:**")
                 st.info(row['Last Note'])
                 
-                if st.button(f"📋 Salin Skrip", key=f"copy_cel_{idx}"):
-                    st.success("Skrip berhasil disalin!")
+                # Copy button with JavaScript clipboard functionality
+                import json
+                script_json = json.dumps(celebration_script)
+                copy_button_html = f"""
+                <button onclick="copyToClipboard()" 
+                        style="background: #4CAF50; color: white; border: none; padding: 8px 16px; 
+                               border-radius: 5px; cursor: pointer; width: 100%; margin-bottom: 10px;">
+                    📋 Salin Skrip
+                </button>
+                <script>
+                function copyToClipboard() {{
+                    navigator.clipboard.writeText({script_json}).then(function() {{
+                        alert('Skrip berhasil disalin ke clipboard!');
+                    }}).catch(function(err) {{
+                        alert('Gagal menyalin: ' + err);
+                    }});
+                }}
+                </script>
+                """
+                components.html(copy_button_html, height=50)
                 
                 # WhatsApp button with actual link
                 import urllib.parse
@@ -627,8 +646,26 @@ if view_mode == "Relationship Health":
             
             col_btn1, col_btn2 = st.columns(2)
             with col_btn1:
-                if st.button("📋 Salin Skrip"):
-                    st.success("Skrip berhasil disalin!")
+                # Copy button with JavaScript
+                import json
+                script_json = json.dumps(greeting_script)
+                copy_button_html = f"""
+                <button onclick="copyToClipboard()" 
+                        style="background: #4CAF50; color: white; border: none; padding: 8px 16px; 
+                               border-radius: 5px; cursor: pointer; width: 100%;">
+                    📋 Salin Skrip
+                </button>
+                <script>
+                function copyToClipboard() {{
+                    navigator.clipboard.writeText({script_json}).then(function() {{
+                        alert('Skrip berhasil disalin ke clipboard!');
+                    }}).catch(function(err) {{
+                        alert('Gagal menyalin: ' + err);
+                    }});
+                }}
+                </script>
+                """
+                components.html(copy_button_html, height=50)
             with col_btn2:
                 import urllib.parse
                 wa_message = urllib.parse.quote(greeting_script)
@@ -1795,8 +1832,26 @@ else:
             
             col_b1, col_b2, col_b3 = st.columns(3)
             with col_b1:
-                if st.button("📋 Salin ke Clipboard"):
-                    st.success("Skrip berhasil disalin!")
+                # Copy button with JavaScript
+                import json
+                script_json = json.dumps(script_area)
+                copy_button_html = f"""
+                <button onclick="copyToClipboard()" 
+                        style="background: #4CAF50; color: white; border: none; padding: 8px 16px; 
+                               border-radius: 5px; cursor: pointer; width: 100%; height: 38px;">
+                    📋 Salin Skrip
+                </button>
+                <script>
+                function copyToClipboard() {{
+                    navigator.clipboard.writeText({script_json}).then(function() {{
+                        alert('Skrip berhasil disalin ke clipboard!');
+                    }}).catch(function(err) {{
+                        alert('Gagal menyalin: ' + err);
+                    }});
+                }}
+                </script>
+                """
+                components.html(copy_button_html, height=50)
             with col_b2:
                 if st.button("🔄 Generate Ulang (Formal)"):
                     st.info("Sedang generate ulang dengan tone formal...")

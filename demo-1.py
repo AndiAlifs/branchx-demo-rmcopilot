@@ -1514,6 +1514,93 @@ else:
                     st.rerun()
                 
                 st.markdown("<br>", unsafe_allow_html=True)
+        
+        # ========== OTHER CLIENTS SECTION ==========
+        st.markdown("---")
+        st.subheader(f"📊 Klien Lainnya ({len(df) - len(priority_leads)} klien)")
+        
+        # Get other clients (not in top 5 priority)
+        other_clients = df[~df.index.isin(priority_leads.index)].sort_values('Avg Giro Balance (M)', ascending=False)
+        
+        # Display options
+        display_mode = st.radio(
+            "Tampilkan sebagai:",
+            ["Compact Cards", "Table View"],
+            horizontal=True,
+            key="other_clients_view"
+        )
+        
+        if display_mode == "Compact Cards":
+            # Compact card view with analysis buttons
+            for idx, row in other_clients.iterrows():
+                with st.expander(f"{row['Client Name']} - Rp {row['Avg Giro Balance (M)']}M - {row['Opportunity Tag']}", expanded=False):
+                    col_c1, col_c2, col_c3 = st.columns([2, 2, 1])
+                    
+                    with col_c1:
+                        st.metric("Saldo Giro", f"Rp {row['Avg Giro Balance (M)']}M")
+                        st.caption(f"📍 {row['SME Loan Status']} SME | {row['Payroll Status']} Payroll")
+                    
+                    with col_c2:
+                        st.metric("Potensial", f"Rp {row['Potential Value (M)']}M")
+                        st.caption(f"🔄 {row['Transaction Frequency']} | 📅 {row['Days Since Contact']} hari lalu")
+                    
+                    with col_c3:
+                        # Opportunity badge
+                        tag_color = OPPORTUNITY_COLORS.get(row['Opportunity Tag'], '#95a5a6')
+                        st.markdown(f"""
+                        <div style="
+                            background: {tag_color};
+                            color: white;
+                            padding: 5px;
+                            border-radius: 5px;
+                            text-align: center;
+                            font-size: 10px;
+                            margin-bottom: 10px;
+                        ">
+                            {row['Opportunity Tag'].replace('TARGET ', '')}
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        if st.button("🔍 Analisis", key=f"other_{idx}", use_container_width=True):
+                            st.session_state['selected_client'] = row['Client Name']
+                            st.rerun()
+        
+        else:
+            # Table view with action column
+            table_df = other_clients[['Client Name', 'Avg Giro Balance (M)', 'Potential Value (M)', 
+                                      'Opportunity Tag', 'Transaction Frequency', 'Days Since Contact']].copy()
+            
+            # Add analyze column with buttons
+            st.dataframe(
+                table_df,
+                use_container_width=True,
+                height=400,
+                column_config={
+                    "Client Name": st.column_config.TextColumn("Nama Klien", width="medium"),
+                    "Avg Giro Balance (M)": st.column_config.NumberColumn("Giro (M)", format="Rp %.1f M"),
+                    "Potential Value (M)": st.column_config.NumberColumn("Potensial (M)", format="Rp %.1f M"),
+                    "Opportunity Tag": st.column_config.TextColumn("Tag", width="medium"),
+                    "Transaction Frequency": st.column_config.TextColumn("Freq", width="small"),
+                    "Days Since Contact": st.column_config.NumberColumn("Hari", format="%d hari"),
+                }
+            )
+            
+            # Quick analyze selector below table
+            st.markdown("**Pilih klien untuk analisis:**")
+            selected_client_name = st.selectbox(
+                "Klien",
+                options=["-- Pilih Klien --"] + other_clients['Client Name'].tolist(),
+                key="select_other_client"
+            )
+            
+            col_btn1, col_btn2 = st.columns([1, 3])
+            with col_btn1:
+                if st.button("🔍 Analisis Client Terpilih", disabled=(selected_client_name == "-- Pilih Klien --")):
+                    st.session_state['selected_client'] = selected_client_name
+                    st.rerun()
+            with col_btn2:
+                if selected_client_name != "-- Pilih Klien --":
+                    st.info(f"Siap menganalisis: {selected_client_name}")
 
     # ========== ZONE 3: RIGHT COLUMN (CO-PILOT PANEL) ==========
     with col_right:

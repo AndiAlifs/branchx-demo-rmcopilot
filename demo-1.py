@@ -504,8 +504,11 @@ if view_mode == "Relationship Health":
                 if st.button(f"📋 Salin Skrip", key=f"copy_cel_{idx}"):
                     st.success("Skrip berhasil disalin!")
                 
-                if st.button(f"✉️ Kirim WA", key=f"send_cel_{idx}"):
-                    st.success("Membuka WhatsApp...")
+                # WhatsApp button with actual link
+                import urllib.parse
+                wa_message = urllib.parse.quote(celebration_script)
+                wa_link = f"https://wa.me/6286276272612?text={wa_message}"
+                st.markdown(f'<a href="{wa_link}" target="_blank"><button style="background: #25D366; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; width: 100%;">✉️ Kirim WA</button></a>', unsafe_allow_html=True)
     
     st.markdown("---")
     
@@ -627,8 +630,10 @@ if view_mode == "Relationship Health":
                 if st.button("📋 Salin Skrip"):
                     st.success("Skrip berhasil disalin!")
             with col_btn2:
-                if st.button("✉️ Kirim via WA"):
-                    st.success("Membuka WhatsApp...")
+                import urllib.parse
+                wa_message = urllib.parse.quote(greeting_script)
+                wa_link = f"https://wa.me/6286276272612?text={wa_message}"
+                st.markdown(f'<a href="{wa_link}" target="_blank"><button style="background: #25D366; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; width: 100%;">✉️ Kirim WA</button></a>', unsafe_allow_html=True)
         
         with col_ctx2:
             st.markdown("**Quick Actions:**")
@@ -1796,8 +1801,10 @@ else:
                 if st.button("🔄 Generate Ulang (Formal)"):
                     st.info("Sedang generate ulang dengan tone formal...")
             with col_b3:
-                if st.button("✉️ Kirim via WA"):
-                    st.success("Membuka WhatsApp...")
+                import urllib.parse
+                wa_message = urllib.parse.quote(script)
+                wa_link = f"https://wa.me/6286276272612?text={wa_message}"
+                st.markdown(f'<a href="{wa_link}" target="_blank"><button style="background: #25D366; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; width: 100%; height: 38px;">✉️ Kirim WA</button></a>', unsafe_allow_html=True)
             
             st.markdown("---")
             
